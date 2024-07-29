@@ -1,0 +1,74 @@
+Common Use-Case for Using a DaemonSet Instead of a ReplicaSet
+Scenario: Monitoring and Logging Agents
+
+Use-Case Description:
+In a Kubernetes cluster, it's often necessary to deploy system-level applications that need to run on every node in the cluster. Two common examples are monitoring agents (e.g., Prometheus node exporter) and logging agents (e.g., Fluentd, Filebeat). These agents collect metrics and logs from each node and send them to a central location for analysis and storage.
+
+Why Use a DaemonSet?
+A DaemonSet ensures that a copy of a specific pod runs on every node in the cluster (or a subset of nodes defined by a node selector). This is crucial for applications that need to perform system-level tasks on every node, such as monitoring system health or collecting logs.
+
+Example: Deploying a Fluentd DaemonSet for Log Collection
+Fluentd is a popular open-source data collector for unified logging. By deploying Fluentd as a DaemonSet, you ensure that it runs on every node, collecting logs from all applications running on those nodes.
+
+Steps to Deploy Fluentd as a DaemonSet:
+1. Define the DaemonSet YAML Configuration:
+  apiVersion: apps/v1
+  kind: DaemonSet
+  metadata:
+    name: fluentd
+    labels:
+      k8s-app: fluentd-logging
+  spec:
+    selector:
+      matchLabels:
+        name: fluentd
+    template:
+      metadata:
+        labels:
+          name: fluentd
+      spec:
+        containers:
+        - name: fluentd
+          image: fluent/fluentd:v1.12-debian-1
+          resources:
+            limits:
+              memory: 200Mi
+              cpu: 100m
+            requests:
+              memory: 100Mi
+              cpu: 50m
+          volumeMounts:
+          - name: varlog
+            mountPath: /var/log
+          - name: varlibdockercontainers
+            mountPath: /var/lib/docker/containers
+            readOnly: true
+        terminationGracePeriodSeconds: 30
+        volumes:
+        - name: varlog
+          hostPath:
+            path: /var/log
+        - name: varlibdockercontainers
+          hostPath:
+            path: /var/lib/docker/containers
+2. Apply the DaemonSet Configuration:
+    kubectl apply -f fluentd-daemonset.yaml
+
+Key Differences Between DaemonSet and ReplicaSet:
+
+  DaemonSet:
+  
+  Ensures that a pod runs on every node in the cluster.
+  Used for system-level operations (e.g., log collection, monitoring).
+  Automatically adds pods to new nodes as they are added to the cluster.
+
+  ReplicaSet:
+  
+  Ensures a specified number of pod replicas are running.
+  Used for application-level deployments (e.g., web applications, services).
+  Does not automatically scale to new nodes unless combined with a Deployment and Horizontal Pod Autoscaler (HPA).
+
+  Conclusion:
+
+  Using a DaemonSet is ideal for scenarios where you need to ensure a specific pod runs on every node, such as deploying monitoring and logging agents.
+  In contrast, a ReplicaSet is suitable for maintaining a desired number of application pod replicas across the cluster.
