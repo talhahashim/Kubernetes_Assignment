@@ -1,0 +1,58 @@
+Updating a container's image in a deployment with zero downtime is a common requirement in Kubernetes.
+The Deployment controller in Kubernetes handles rolling updates, ensuring that your application remains available during the update process.
+Below are the steps to update a container's image using a deployment, ensuring zero downtime.
+
+Steps to Update a Container's Image Using a Deployment
+Check the Current Deployment:
+
+  1. First, verify the current state of your deployment to see the existing configuration.
+  kubectl get deployments
+  kubectl describe deployment <deployment-name>
+
+  2. Update the Deployment with the New Image:
+
+  You can update the deployment with the new image using the kubectl set image command.
+  This command updates the image for the specified container within the deployment.
+  kubectl set image deployment/<deployment-name> <container-name>=<new-image>:<tag>
+  
+  kubectl set image deployment/my-deployment my-container=my-image:v2
+
+  3.Monitor the Update:
+
+  Kubernetes will start the rolling update process, creating new pods with the updated image and gradually terminating the old pods.
+  Monitor the progress of the update to ensure it completes successfully.
+
+kubectl rollout status deployment/<deployment-name>
+
+kubectl rollout status deployment/my-deployment
+4.Verify the Update:
+
+  After the update has completed, verify that the new image is running and that the application is functioning as expected.
+  kubectl get pods
+  kubectl describe pods
+
+Detailed Example:
+Assume you have a deployment named my-deployment with a single container named my-container running the image my-image:v1.
+You want to update this to my-image:v2 with zero downtime.
+  kubectl get deployments
+  kubectl describe deployment my-deployment
+  kubectl set image deployment/my-deployment my-container=my-image:v2
+  kubectl rollout status deployment/my-deployment
+  deployment "my-deployment" successfully rolled out
+  kubectl get pods
+  kubectl describe pods
+
+Ensure that all the pods are running with the new image my-image:v2 and that there are no issues reported.
+Rollback (If Needed)
+If there is an issue with the new image, you can roll back to the previous version to minimize downtime.
+
+1. Rollback the Deployment:
+  kubectl rollout undo deployment/my-deployment
+2. Monitor the Rollback:
+  kubectl rollout status deployment/my-deployment
+
+Conclusion
+
+Using the kubectl set image command along with the deployment's rolling update strategy ensures that your application experiences zero downtime while updating the container image. 
+This approach leverages Kubernetes' built-in capabilities to manage the update process, maintaining application availability throughout.
+
