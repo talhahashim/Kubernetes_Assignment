@@ -1,0 +1,96 @@
+
+# Master Node Observations and Commands
+
+## Commands Used During the Assignment
+```bash
+cd $home
+git clone https://github.com/ashishrpandey/example-voting-app
+cd /root/example-voting-app/k8s-specifications
+kubectl apply -f .
+kubectl get svc
+
+kubectl delete pod -l app=vote
+kubectl delete pod -l app=worker
+kubectl delete pod -l app=db
+
+kubectl logs -l app=vote
+kubectl logs -l app=worker
+kubectl logs -l app=db
+
+kubectl apply -f .
+kubectl get pods
+```
+
+## Observations After Deleting Pods
+
+### Vote Pod Deletion
+- **Frontend Observation:** The voting app stopped working.
+- **Unix Logs:**
+```bash
+kubectl logs -l app=vote
+[2024-07-29 02:00:34 +0000] [1] [INFO] Starting gunicorn 21.2.0
+[2024-07-29 02:00:34 +0000] [1] [INFO] Listening at: http://0.0.0.0:80 (1)
+[2024-07-29 02:00:34 +0000] [1] [INFO] Using worker: sync
+[2024-07-29 02:00:34 +0000] [6] [INFO] Booting worker with pid: 6
+[2024-07-29 02:00:34 +0000] [7] [INFO] Booting worker with pid: 7
+[2024-07-29 02:00:34 +0000] [8] [INFO] Booting worker with pid: 8
+[2024-07-29 02:00:34 +0000] [9] [INFO] Booting worker with pid: 9
+```
+
+### Worker Pod Deletion
+- **Frontend Observation:** New votes are not being processed.
+- **Unix Logs:**
+```bash
+kubectl logs -l app=worker
+Connected to db
+Found redis at 10.99.13.18
+Connecting to redis
+```
+
+### DB Pod Deletion
+- **Frontend Observation:** The result app stopped working.
+- **Unix Logs:**
+```bash
+kubectl logs -l app=db
+PostgreSQL init process complete; ready for start up.
+LOG:  database system was shut down at 2024-07-29 02:01:07 UTC
+LOG:  MultiXact member wraparound protections are now enabled
+LOG:  database system is ready to accept connections
+LOG:  autovacuum launcher started
+ERROR:  relation "votes" does not exist at character 38
+STATEMENT:  SELECT vote, COUNT(id) AS count FROM votes GROUP BY vote
+ERROR:  relation "votes" does not exist at character 38
+STATEMENT:  SELECT vote, COUNT(id) AS count FROM votes GROUP BY vote
+```
+
+## Why the Result App Stopped Working After DB Pod Stop
+The result app stopped working because it relies on the database to fetch the voting results. Without the db pod, it cannot retrieve or update the results.
+
+## How to Make the Result Pod Work
+Recreate the db pod by reapplying the Kubernetes configurations:
+```bash
+kubectl apply -f .
+```
+Ensure all pods are running:
+```bash
+kubectl get pods
+NAME                      READY   STATUS    RESTARTS        AGE
+db-58cc845644-7c5qj       1/1     Running   0               4m28s
+kubia2-2jjlb              1/1     Running   0               6d19h
+kubia2-dkl49              1/1     Running   0               6d18h
+kubia2-glfl5              1/1     Running   0               6d18h
+kubia2-xrdmn              1/1     Running   0               6d18h
+redis-6878558678-nw8ch    1/1     Running   0               23m
+result-86bc6f7b5d-b6nbm   1/1     Running   1 (3m58s ago)   23m
+vote-7d884dd585-454gh     1/1     Running   0               4m57s
+worker-6fc5d5b668-5k6tk   1/1     Running   1 (3m57s ago)   4m40s
+```
+
+## Jargons Learned
+- Kubernetes
+- Pods
+- Services
+- NodePort
+- Deployment
+- Cluster
+- kubectl
